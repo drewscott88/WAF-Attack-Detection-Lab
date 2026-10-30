@@ -136,4 +136,35 @@ This was a source-code comparison, not an independently verified SQL injection t
 
 ## Lab Scope
 
+## Lab Evidence and Screenshots
+
+### 1. Successful SQL Injection and WAF Bypass
+
+The SQL injection payload returned all five DVWA user records when the backend was accessed directly, demonstrating that the origin server remained vulnerable and reachable.
+
+![Direct backend SQL injection bypass](screenshots/Backend_Bypass.png)
+
+### 2. ModSecurity Detection-Only Logging
+
+OWASP CRS detected the SQL injection using rule `942100`, with an inbound anomaly score of 8. In detection-only mode, the request was logged but not blocked.
+
+![ModSecurity detection-only audit log](screenshots/WAF-SQLi-DetectOnly.png)
+
+### 3. WAF Blocking Evidence
+
+After enabling ModSecurity blocking mode, the same SQL injection payload produced HTTP 403 Forbidden. Rule `949110` enforced the anomaly-score threshold.
+
+![ModSecurity blocking audit log](screenshots/Blocking_Log.png)
+
+### 4. Backend Firewall Configuration
+
+UFW was configured with default-deny incoming traffic and an explicit HTTP allowance from the WAF server at `192.168.60.10`.
+
+![Backend UFW firewall rules](screenshots/Backen_Firewall_Rules.png)
+
+### 5. Vulnerable PHP Source Code
+
+DVWA's Low security implementation directly interpolated user input into a SQL query, allowing the SQL injection payload to modify the query logic.
+
+![Vulnerable DVWA SQL query](screenshots/DVWA_Vulnerable_SQL_Code.png)
 All testing was performed against intentionally vulnerable systems in a self-hosted, isolated VirtualBox lab. No third-party production systems were targeted.
