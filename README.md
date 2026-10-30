@@ -73,3 +73,67 @@ The audit log confirmed the SQL injection detection and disruptive action, inclu
 ### Key Finding
 
 A WAF in detection-only mode can generate useful security telemetry while still allowing an attack to succeed. Enabling blocking mode prevented the tested payload from reaching the vulnerable application through the protected route.
+## WAF Bypass and Backend Hardening
+
+### 4. Direct-Origin WAF Bypass
+
+After confirming that ModSecurity blocked the SQL injection through the WAF (`192.168.60.10`), I tested direct access to the backend server (`192.168.60.20`).
+
+The backend remained reachable from Kali Linux, allowing the same SQL injection payload to retrieve all five DVWA user records.
+
+**Finding:** A WAF cannot protect an application when an attacker can bypass it and communicate directly with an exposed backend.
+
+### 5. Backend Firewall Remediation
+
+Configured UFW on the backend Ubuntu server to permit HTTP traffic from the WAF only:
+
+```bash
+sudo ufw allow from 192.168.60.10 to any port 80 proto tcp
+sudo ufw default deny incoming
+sudo ufw enable
+sudo ufw status verbose
+```
+
+**Validation results:**
+
+- Direct HTTP access from Kali (`192.168.60.30`) to the backend stopped working.
+- Legitimate web access through the WAF (`192.168.60.10`) continued working.
+- UFW reported an active firewall with default-deny incoming policy and an explicit WAF-to-backend HTTP allowance.
+
+This removed the tested direct-origin HTTP bypass while preserving the intended reverse-proxy path.
+
+## Secure Coding Comparison
+
+### Vulnerable Implementation: DVWA Low
+
+Reviewed the DVWA PHP source code and identified SQL query construction using direct string interpolation:
+
+```php
+$query = "SELECT first_name, last_name FROM users WHERE user_id = '$id';";
+```
+
+Because the application inserted user input directly into SQL syntax, a crafted payload could change the query's logic.
+
+### Secure Implementation: DVWA Impossible
+
+Reviewed DVWA's Impossible-level PHP implementation and identified a prepared statement with a bound integer parameter:
+
+```php
+SELECT first_name, last_name FROM users WHERE user_id = (:id) LIMIT 1;
+```
+
+The application uses `bindParam(':id', $id, PDO::PARAM_INT)` and executes the prepared statement, separating user-supplied data from SQL query structure.
+
+This was a source-code comparison, not an independently verified SQL injection test of the Impossible-level implementation.
+
+## Lessons Learned
+
+- **Detection is not prevention:** Security monitoring must be paired with appropriate enforcement.
+- **WAFs can be bypassed:** Backend services must not be unnecessarily exposed to untrusted clients.
+- **Defense in depth matters:** WAF rules, network access controls, and secure application code address different risks.
+- **Parameterized queries are the primary SQL injection defense:** Input validation and WAF filtering provide additional protection but do not replace safe database query construction.
+- **Validation is essential:** Security changes should be tested to confirm that malicious access is restricted while legitimate application traffic still works.
+
+## Lab Scope
+
+All testing was performed against intentionally vulnerable systems in a self-hosted, isolated VirtualBox lab. No third-party production systems were targeted.
