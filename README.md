@@ -136,6 +136,8 @@ This was a source-code comparison, not an independently verified SQL injection t
 
 ## Lab Scope
 
+All testing was performed against intentionally vulnerable systems in a self-hosted, isolated VirtualBox lab. No third-party production systems were targeted.
+
 ## Lab Evidence and Screenshots
 
 ### 1. Successful SQL Injection and WAF Bypass
@@ -167,4 +169,4 @@ UFW was configured with default-deny incoming traffic and an explicit HTTP allow
 DVWA's Low security implementation directly interpolated user input into a SQL query, allowing the SQL injection payload to modify the query logic.
 
 ![Vulnerable DVWA SQL query](screenshots/DVWA_Vulnerable_SQL_Code.png)
-All testing was performed against intentionally vulnerable systems in a self-hosted, isolated VirtualBox lab. No third-party production systems were targeted.
+
